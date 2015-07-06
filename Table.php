@@ -70,8 +70,8 @@ class Table {
 		if(!($this->_driver instanceof Driver)){
 
 			$this->_driver = (\is_string($this->_driver))
-				? \ygg\Db::get($this->_driver) //By it's name
-				: \ygg\Db::getDefault(); //Default connection.
+				? Manager::get($this->_driver) //By it's name
+				: Manager::getDefault(); //Default connection.
 
 		}
 
