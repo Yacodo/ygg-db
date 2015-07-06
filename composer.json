@@ -1,0 +1,21 @@
+{
+    "name": "yggdrasil/db",
+    "description": "Yggdrasil DB Component",
+    "type": "library",
+    "require": {
+        "php": ">=5.4.0"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Wilfried CERON",
+            "email": "wilfried@ceron.fr"
+        }
+    ],
+    "minimum-stability": "stable",
+	"autoload": {
+		"psr-4": {
+			"ygg\\Db\\": "./"
+		}
+	}
+}
