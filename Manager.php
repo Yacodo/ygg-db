@@ -1,6 +1,6 @@
 <?php
 
-namespace ygg;
+namespace ygg\Db;
 
 class Manager {
 
@@ -40,7 +40,7 @@ class Manager {
 	 * @param Db\Driver $driver Connection driver
 	 * @param bool $default Used as a default connection on true
 	**/
-	static public function add($name, Db\Driver $driver, $default = false){
+	static public function add($name, Driver $driver, $default = false){
 
 		self::$_connections[$name] = $driver;
 
