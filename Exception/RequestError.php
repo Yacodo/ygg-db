@@ -2,7 +2,7 @@
 
 namespace ygg\Db\Exception;
 
-class RequestError extends ygg\Db\Exception {
+class RequestError extends \ygg\Db\Exception {
 
 	public $query;
 	public $params;

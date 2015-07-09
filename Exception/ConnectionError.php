@@ -2,7 +2,7 @@
 
 namespace ygg\Db\Exception;
 
-class ConnectionError extends ygg\Db\Exception {
+class ConnectionError extends \ygg\Db\Exception {
 
 	public $infos;
 	public $driver;

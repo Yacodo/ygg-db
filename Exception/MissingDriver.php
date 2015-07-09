@@ -2,7 +2,7 @@
 
 namespace ygg\Db\Exception;
 
-class MissingDriver extends ygg\Db\Exception {
+class MissingDriver extends \ygg\Db\Exception {
 
 	public $driver;
 
