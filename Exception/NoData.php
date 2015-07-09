@@ -2,7 +2,7 @@
 
 namespace ygg\Db\Exception;
 
-class NoData extends Exception {
+class NoData extends ygg\Db\Exception {
 
 	public $type;
 
