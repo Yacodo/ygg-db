@@ -358,8 +358,8 @@ class Pgsql extends PDO {
 					$result.= ', ';
 				}
 
-				$result = ($value instanceof Expr)
-					? $value->sqlizeText($this)
+				$result.= ($value instanceof Expr)
+					? $value->sqlizeString($this)
 					: $this->quoteValue($value);
 
 			
@@ -395,7 +395,7 @@ class Pgsql extends PDO {
 	 * LEFT JOIN
 	 * 		`secondTable`
 	 * 		USING
-	 * 			columnOne, columnTwo
+	 * 			(columnOne, columnTwo)
 	 *
 	 * Warning : No "security filter" in this function.
 	 * Generally you don't need user input for join...
@@ -648,9 +648,9 @@ class Pgsql extends PDO {
 		$sql = "INSERT INTO\n";
 		$sql.= $this->sqlizeFrom($froms);
 
-		//Set value(s)
-		$sql.= "SET\n";
-		$sql.= $this->sqlizeSet($sets);
+		$sql.= $this->sqlizeValuesKeys($sets);
+		$sql.= "VALUES\n";
+		$sql.= $this->sqlizeValuesDatas($sets);
 
 		return $sql;
 	

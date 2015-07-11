@@ -2,7 +2,7 @@
 
 namespace ygg\Db\Exception;
 
-class NoConnection extends \ygg\Db\Exception {
+class NoConnection extends \Exception {
 
 	public function __construct(){
 

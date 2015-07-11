@@ -2,7 +2,7 @@
 
 namespace ygg\Db\Exception;
 
-class NoDriver extends \ygg\Db\Exception {
+class NoDriver extends \Exception {
 
 	public function __construct(){
 

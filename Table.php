@@ -11,6 +11,8 @@ class Table {
 
 	protected $_id;
 
+	protected $_mounts = array();
+
 	/**
 	 * Get table name
 	 *
@@ -43,6 +45,24 @@ class Table {
 	public function getTableIdentifier(){
 
 		return $this->_id;
+
+	}
+
+	/**
+	 * List virtual mounts points
+	**/
+	public function getTableMounts(){
+
+		return $this->_mounts;
+
+	}
+
+	/**
+	 * Add a mount point
+	**/
+	public function addTableMount($prefix, Table $table){
+
+		$this->_mounts[$prefix] = $table;
 
 	}
 

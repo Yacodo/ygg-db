@@ -37,6 +37,8 @@ abstract class Query {
 	protected $_orders = null;
 	protected $_limits = null;
 
+	protected $_mounts = null;
+
 	protected $_params;
 
 	protected $_query;
@@ -153,7 +155,8 @@ abstract class Query {
 
 		if($this->_params !== null){
 
-			if($value !== null AND $name !== null){
+			//if($value !== null AND $name !== null){
+			if($name !== null){
 
 				if(\strlen($name) > 1 AND $name[0] != ':'){
 
@@ -162,12 +165,6 @@ abstract class Query {
 				}
 
 				$this->_params[$name] = $value;
-
-			}else{
-
-				$this->_params[] = ($name != null)
-					? $name
-					: $value;
 
 			}
 
@@ -376,6 +373,28 @@ abstract class Query {
 		$this->addJoin(self::RJOIN, $table, $condition, $columns);
 		return $this;
 	
+	}
+
+	/**
+	 * Prepare "virtual mounting point" for Select
+	 * 
+	 * @param string $prefix Prefix for mounting
+	 * @param Table $table Table to mount for datas
+	**/
+	public function addMount($prefix, Table $table){
+
+		if($this->mount !== null){
+
+			$this->mount[$prefix] = $table;
+
+		}
+
+		return $this;
+
+	}
+
+	public function getMounts(){
+		return $this->mounts;
 	}
 
 	/**

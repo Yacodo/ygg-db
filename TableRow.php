@@ -9,17 +9,112 @@ class TableRow extends Row {
 	protected $_datasClean;
 	protected $_datas;
 
+	protected $_mounted;
+
 	/**
 	 * Constructor
 	 *
 	 * @param Table $table Table for Row
-	**/
+	 **/
 	public function __construct(Table $table, array $datas = array()){
 
 		$this->_table = $table;
 
+		$this->mountDatas($datas);
+
+	}
+
+	private function mountDatas(array $datas){
+
+		if(!empty($this->_table->getTableMounts())){
+
+			$prefix_datas = array();
+
+			$save_identifiers = array();
+
+			$datas = array_filter(
+				$datas,
+				function($value, $key) use(&$prefix_datas, &$save_identifier){
+
+					foreach($this->_table->getTableMounts() AS $prefix => $table){
+						$position = strpos($key, '_');
+
+						if(
+							(\is_array($value) AND $key == $prefix)
+							OR
+							($position AND mb_strlen($key) >= $position + 1 AND substr($key, 0, $position) == $prefix)
+						){
+
+							if(!isset($prefix_datas[$prefix]))
+								$prefix_datas[$prefix] = array();
+
+
+
+							//For one by one value ($prefix_$key = $value)
+							if($position){
+								$key = substr($key, $position + 1);
+								$prefix_datas[$prefix][$key] = $value;
+
+								//Save identifier
+								if($key == $table->getIdentifier()){
+									return true;
+								}
+
+
+							//For values container ($prefix => [$values...])
+							}else{
+								$prefix_datas[$prefix] = $value;
+
+								//Save identifier for current row object ($prefix_$identifier)
+								if(isset($prefix_datas[$prefix][$table->getIdentifier()])){
+									$save_identifiers[$prefix . '_' . $table->getIdentifier()] = $prefix_datas[$prefix][$table->getIdentifier()];	
+								}
+
+							}
+
+							return false;
+
+						}
+
+					}
+
+					return true;
+
+				},
+				ARRAY_FILTER_USE_BOTH
+			);
+
+			//Restore FKs identifier 
+			$datas = array_merge($datas, $save_identifiers);
+
+			$this->_mounted = array();
+
+			foreach($prefix_datas AS $prefix => $values){
+				$this->_mounted[$prefix] = $this->_table->getTableMounts()[$prefix]
+					->createRow($values);
+			}
+
+		}
+
 		$this->_datasClean = $datas;
 		$this->_datas = array();
+
+	}
+
+	protected function getMountedPrefix($prefix){
+
+		if(isset($this->_table->getTableMounts()[$prefix])){
+
+			//Checking if mounted prefix exists
+			if(!isset($this->_mounted[$prefix])){
+				$this->_mounted[$prefix] = $this->_table->getTableMounts()[$prefix]->createRow();
+			}
+
+			return $this->_mounted[$prefix];
+
+		}
+
+		return null;
 
 	}
 
@@ -28,8 +123,33 @@ class TableRow extends Row {
 	 *
 	 * @param string $name Column name
 	 * @param mixed $value Column value
-	**/
+	 **/
 	public function __set($name, $value){
+
+		$position = strcspn($name, '._');
+
+		//Checking if position is not the last char
+		if(
+			($position AND mb_strlen($name) >= $position + 1)
+			OR
+			\is_array($value)
+		){
+
+			//Get the prefix
+			$prefix = substr($name, 0, $position);
+
+			$mounted = $this->getMountedPrefix($prefix);
+
+			if($mounted){
+				if(\is_array($value)){
+					$mounted->clean()->fromArray($value);
+				}else{
+					$mounted->__set(substr($name, $position + 1), $value);
+				}
+				return;
+			}
+
+		}
 
 		$this->_datas[$name] = $value;
 
@@ -40,7 +160,7 @@ class TableRow extends Row {
 	 *
 	 * @param string $name Column name
 	 * @return mixed False if column not found
-	**/
+	 **/
 	public function __get($name){
 
 		if(isset($this->_datas[$name])){
@@ -52,6 +172,10 @@ class TableRow extends Row {
 			if(isset($this->_datasClean[$name])){
 
 				$value = $this->_datasClean[$name];
+
+			}elseif(isset($this->mounted[$name])){
+
+				$value = $this->mounted[$name];
 
 			}else{
 
@@ -67,7 +191,7 @@ class TableRow extends Row {
 
 	/**
 	 * @alias __set()
-	**/
+	 **/
 	public function set($name, $value){
 
 		$this->__set($name, $value);
@@ -76,7 +200,7 @@ class TableRow extends Row {
 
 	/**
 	 * @alias __get()
-	**/
+	 **/
 	public function get($name){
 
 		return $this->__get($name);
@@ -89,41 +213,83 @@ class TableRow extends Row {
 	 * Update when datasClean is array ($this->setResult($result)->fetch();)
 	 *
 	 * @return Row
-	**/
-	public function save(){
+	 **/
+	public function save($force_id = 0){
 
+		//Check if new datas added
 		$hasDatas = count($this->_datas) > 0; 
 
-		//Update
+		//check for Update
 		if(count($this->_datasClean) > 0){ 
 
-			//Nothing to update
 			if($hasDatas){
 
 				//By identifier
-				if(($id = $this->_table->getTableIdentifier()) AND isset($this->_datasClean[$id])){
+				if(($id = $this->_table->getTableIdentifier())){
 
-					$conditions = array(
-						$id => $this->_datasClean[$id]
-					);
+					if($force_id > 0 OR isset($this->_datasClean[$id])){
 
-				}else{ //By current row datas
+						$conditions = array(
+							$id => ($force_id == 0)
+								? $force_id
+								: $this->_datasClean[$id]
+						);
 
-					$conditions = $this->_datasClean;
+					}
+
+					if(!isset($conditions)){ //By current row datas (if none assigned)
+						$conditions = $this->_datasClean;
+					}
+
+					return $this->_table->update($this->_datas, $conditions);
 
 				}
 
-				return $this->_table->update($this->_datas, $conditions);
-
 			}
 
-		}elseif($hasDatas){ //Insert
+		}elseif($hasDatas){ //check for Insert
 
 			return $this->_table->insert($this->_datas);
 
 		}
 
 		//Nothing for save(), no datas ($_datas) for update or insert
+		return false;
+
+	}
+
+	/**
+	 * Reload using table id
+	**/
+	public function reload(){
+
+		$table_id = $this->_table->getTableIdentifier();
+
+		if($table_id){
+			
+			$id = $this->__get[$table_id];
+
+			if($id){
+
+				$result = $this->_table->getById($id);
+
+				if($result){
+
+					$this->clean();
+
+					//HARD COPY... TODO Find an elegant way ??
+					$this->_datasClean = $result->_datasClean;
+					$this->_datas = $result->_datas;
+					$this->_mounted = $result->_mounted;
+
+					unset($result);
+
+				}
+
+			}
+
+		}
+
 		return false;
 
 	}
@@ -137,6 +303,7 @@ class TableRow extends Row {
 
 		$this->_datasClean = array();
 		$this->_datas = array();
+		$this->_mounted = array();
 
 		return $this;
 
@@ -182,7 +349,8 @@ class TableRow extends Row {
 	**/
 	public function offsetExists($offset){
 
-		return (isset($this->_datasClean[$offset]) || isset($this->_datas[$offset]));
+		//Avoiding shitty checking before accessing value
+		return true; //(isset($this->_datasClean[$offset]) || isset($this->_datas[$offset]));
 
 	}
 

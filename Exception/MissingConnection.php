@@ -2,7 +2,7 @@
 
 namespace ygg\Db\Exception;
 
-class MissingConnection extends \ygg\Db\Exception {
+class MissingConnection extends \Exception {
 
 	public $name;
 

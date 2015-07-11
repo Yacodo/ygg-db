@@ -27,7 +27,7 @@ class Row implements \ArrayAccess {
 
 		return (isset($this->_datas[$name]))
 			? $this->_datas[$name]
-			: false;
+			: null;
 
 	}
 
@@ -56,7 +56,7 @@ class Row implements \ArrayAccess {
 	**/
 	public function offsetExists($offset){
 
-		return isset($this->_datas[$offset]);
+		return true; //isset($this->_datas[$offset]);
 
 	}
 
