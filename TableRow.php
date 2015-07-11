@@ -26,6 +26,9 @@ class TableRow extends Row {
 
 	private function mountDatas(array $datas){
 
+		$this->_datas = array();
+		$this->_mounted = array();
+
 		if(!empty($this->_table->getTableMounts())){
 
 			$prefix_datas = array();
@@ -56,7 +59,7 @@ class TableRow extends Row {
 								$prefix_datas[$prefix][$key] = $value;
 
 								//Save identifier
-								if($key == $table->getIdentifier()){
+								if($key == $table->getTableIdentifier()){
 									return true;
 								}
 
@@ -66,8 +69,8 @@ class TableRow extends Row {
 								$prefix_datas[$prefix] = $value;
 
 								//Save identifier for current row object ($prefix_$identifier)
-								if(isset($prefix_datas[$prefix][$table->getIdentifier()])){
-									$save_identifiers[$prefix . '_' . $table->getIdentifier()] = $prefix_datas[$prefix][$table->getIdentifier()];	
+								if(isset($prefix_datas[$prefix][$table->getTableIdentifier()])){
+									$save_identifiers[$prefix . '_' . $table->getTableIdentifier()] = $prefix_datas[$prefix][$table->getTableIdentifier()];	
 								}
 
 							}
@@ -87,8 +90,6 @@ class TableRow extends Row {
 			//Restore FKs identifier 
 			$datas = array_merge($datas, $save_identifiers);
 
-			$this->_mounted = array();
-
 			foreach($prefix_datas AS $prefix => $values){
 				$this->_mounted[$prefix] = $this->_table->getTableMounts()[$prefix]
 					->createRow($values);
@@ -97,7 +98,6 @@ class TableRow extends Row {
 		}
 
 		$this->_datasClean = $datas;
-		$this->_datas = array();
 
 	}
 
@@ -116,6 +116,16 @@ class TableRow extends Row {
 
 		return null;
 
+	}
+
+	/**
+	 * Add data
+	 *
+	 * @param string $name Data name
+	 * @param mixed $value Data value
+	**/
+	public function addData($name, $value){
+		$this->_datas[$name] = $value;
 	}
 
 	/**
@@ -141,17 +151,24 @@ class TableRow extends Row {
 			$mounted = $this->getMountedPrefix($prefix);
 
 			if($mounted){
+				$t_id = $mounted->_table->getTableIdentifier();
+
 				if(\is_array($value)){
-					$mounted->clean()->fromArray($value);
+					$mounted->fromArray($value);
+					
 				}else{
-					$mounted->__set(substr($name, $position + 1), $value);
+					$key = substr($name, $position + 1);
+					$mounted->__set($key, $value);
 				}
+
+				$this->reloadIDMounted($mounted, $prefix);
+
 				return;
 			}
 
 		}
 
-		$this->_datas[$name] = $value;
+		$this->addData($name, $value);
 
 	}
 
@@ -173,9 +190,9 @@ class TableRow extends Row {
 
 				$value = $this->_datasClean[$name];
 
-			}elseif(isset($this->mounted[$name])){
+			}elseif(isset($this->_mounted[$name])){
 
-				$value = $this->mounted[$name];
+				$value = $this->_mounted[$name];
 
 			}else{
 
@@ -207,6 +224,13 @@ class TableRow extends Row {
 
 	}
 
+	protected function reloadIDMounted(TableRow $mounted, $prefix){
+		$t_id = $mounted->_table->getTableIdentifier();
+		$id = $mounted->__get($t_id);
+
+		$this->addData($prefix . '_' . $t_id, $id);
+	}
+
 	/**
 	 * Save row
 	 * Insert when datasClean is null ($this->clean();)
@@ -216,11 +240,16 @@ class TableRow extends Row {
 	 **/
 	public function save($force_id = 0){
 
+		foreach($this->_mounted AS $prefix => $mounted){
+			$mounted->save();
+			$this->reloadIDMounted($mounted, $prefix);
+		}
+
 		//Check if new datas added
-		$hasDatas = count($this->_datas) > 0; 
+		$hasDatas = count($this->_datas); 
 
 		//check for Update
-		if(count($this->_datasClean) > 0){ 
+		if(count($this->_datasClean)){ 
 
 			if($hasDatas){
 
@@ -230,7 +259,7 @@ class TableRow extends Row {
 					if($force_id > 0 OR isset($this->_datasClean[$id])){
 
 						$conditions = array(
-							$id => ($force_id == 0)
+							$id => ($force_id > 0)
 								? $force_id
 								: $this->_datasClean[$id]
 						);
@@ -241,7 +270,10 @@ class TableRow extends Row {
 						$conditions = $this->_datasClean;
 					}
 
-					return $this->_table->update($this->_datas, $conditions);
+					return $this->_table->update(
+						$this->_table->clearDatasId($this->_datas), 
+						$conditions
+					);
 
 				}
 
@@ -249,7 +281,19 @@ class TableRow extends Row {
 
 		}elseif($hasDatas){ //check for Insert
 
-			return $this->_table->insert($this->_datas);
+			$id = $this->_table->insert(
+				$this->_table->clearDatasId($this->_datas)
+			);
+			
+			$t_id = $this->_table->getTableIdentifier();
+
+			//Assign ID after create
+			if($t_id){
+				unset($this->_datas[$t_id]);	
+				$this->_datasClean[$t_id] = $id;
+			}
+
+			return $id;
 
 		}
 
@@ -260,14 +304,16 @@ class TableRow extends Row {
 
 	/**
 	 * Reload using table id
+	 *
+	 * @param boolean $mounted True to reload mounted in the process (happen after reloading current item
 	**/
-	public function reload(){
+	public function reload($mounted = false){
 
 		$table_id = $this->_table->getTableIdentifier();
 
 		if($table_id){
 			
-			$id = $this->__get[$table_id];
+			$id = $this->__get($table_id);
 
 			if($id){
 
@@ -283,15 +329,28 @@ class TableRow extends Row {
 					$this->_mounted = $result->_mounted;
 
 					unset($result);
-
+				
 				}
 
 			}
 
 		}
 
-		return false;
+		if($mounted)
+			$this->reloadMounted();
 
+		return $this;
+
+	}
+
+	/**
+	 * Reload mounted
+	**/
+	public function reloadMounted(){
+		foreach($this->_mounted AS $mounted)
+			$mounted->reload(true);
+
+		return $this;
 	}
 
 	/**
@@ -334,13 +393,19 @@ class TableRow extends Row {
 	 * @return array
 	**/
 	public function toArray($default = false){
-	
+
 		if(!is_array($this->_datasClean))
 			return array();
 
-		return (!$default AND is_array($this->_datas))
+		$datas = (!$default AND is_array($this->_datas))
 			? array_merge($this->_datasClean, $this->_datas)
 			: $this->_datasClean;
+
+		foreach($this->_mounted AS $prefix => $mounted){
+			$datas[$prefix] = $mounted->toArray($default);
+		}
+
+		return $datas;
 	
 	}
 

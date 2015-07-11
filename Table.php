@@ -147,7 +147,23 @@ class Table {
 	}
 
 	/**
+	 * Remove ID datas from an array (used by TableRow before insert and update)
+	 *
+	 * @param &array $datas Array of datas
+	 * @return array
+	**/
+	public function clearDatasId(array &$datas){
+		if(!empty($this->_id)){
+			unset($datas[$this->_id]);
+		}
+
+		return $datas;
+	}
+
+	/**
 	 * Insert query
+	 *
+	 * @notes Clear ID from datas using ::clearDatasId()
 	 *
 	 * @param array $datas Datas for insert
 	 * @param mixed &$insertId new insert id helper
