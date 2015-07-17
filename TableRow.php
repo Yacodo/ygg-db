@@ -124,7 +124,9 @@ class TableRow extends Row {
 	 * @param string $name Data name
 	 * @param mixed $value Data value
 	**/
-	public function addData($name, $value){
+	public function setData($name, $value){
+		$value = $this->_table->filterData($name, $value);
+
 		$this->_datas[$name] = $value;
 	}
 
@@ -168,7 +170,7 @@ class TableRow extends Row {
 
 		}
 
-		$this->addData($name, $value);
+		$this->setData($name, $value);
 
 	}
 
@@ -228,7 +230,7 @@ class TableRow extends Row {
 		$t_id = $mounted->_table->getTableIdentifier();
 		$id = $mounted->__get($t_id);
 
-		$this->addData($prefix . '_' . $t_id, $id);
+		$this->setData($prefix . '_' . $t_id, $id);
 	}
 
 	/**
@@ -271,7 +273,7 @@ class TableRow extends Row {
 					}
 
 					return $this->_table->update(
-						$this->_table->clearDatasId($this->_datas), 
+						$this->_table->clearDatasColumns($this->_datas), 
 						$conditions
 					);
 
@@ -282,7 +284,7 @@ class TableRow extends Row {
 		}elseif($hasDatas){ //check for Insert
 
 			$id = $this->_table->insert(
-				$this->_table->clearDatasId($this->_datas)
+				$this->_table->clearDatasColumns($this->_datas)
 			);
 			
 			$t_id = $this->_table->getTableIdentifier();

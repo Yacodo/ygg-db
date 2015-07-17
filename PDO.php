@@ -403,12 +403,17 @@ abstract class PDO implements Driver {
 	/**
 	 * Get last inserted id
 	 *
+	 * @param Table|string $name Table or Sequence name
 	 * @return mixed
 	**/
-	public function lastInsertId(){
+	public function lastInsertId($name = null){
 
 		$this->connect();
-		return $this->_link->lastInsertId();
+
+		if($name instanceof Table)
+			$name = $name->getTableSequence();
+
+		return $this->_link->lastInsertId($name);
 
 	}
 

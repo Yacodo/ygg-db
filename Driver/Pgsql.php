@@ -759,4 +759,21 @@ class Pgsql extends PDO {
 
 	}
 
+	/**
+	 * Return a "defaul" ($table_$col_seq) Pgsql sequence name for table identifier
+	 *
+	 * @param Table $table Table
+	 * @return string|null
+	**/
+	public function getTableSequence(\ygg\Db\Table $table){
+
+		$name = null;
+
+		if($table && $table->getTableIdentifier()){
+			$name = $table->getTableName() . "_" . $table->getTableIdentifier() . "_seq";
+		}
+
+		return $name;
+
+	}
 }

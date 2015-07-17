@@ -55,6 +55,7 @@ interface Driver {
 	public function update($table, array $datas, array $wheres = null);
 	public function delete($table, array $wheres);
 
-	public function lastInsertId();
+	public function getTableSequence(Table $table);
+	public function lastInsertId($name = null);
 
 }

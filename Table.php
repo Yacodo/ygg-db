@@ -12,6 +12,8 @@ class Table {
 	protected $_id;
 
 	protected $_mounts = array();
+	protected $_not_nulls = array();
+	protected $_filters_datas = array();
 
 	/**
 	 * Get table name
@@ -49,6 +51,15 @@ class Table {
 	}
 
 	/**
+	 * Get the sequence name for current table ID
+	 *
+	 * @return mixed Sequence name or null
+	**/
+	public function getTableSequence(){
+		return $this->_driver->getTableSequence($this);
+	}
+
+	/**
 	 * List virtual mounts points
 	**/
 	public function getTableMounts(){
@@ -59,11 +70,81 @@ class Table {
 
 	/**
 	 * Add a mount point
+	 *
+	 * @param string $prefix Prefix to mount
+	 * @param Table $table Table to use (Table::createRow()) for mounting point
 	**/
 	public function addTableMount($prefix, Table $table){
 
 		$this->_mounts[$prefix] = $table;
 
+		return $this;
+
+	}
+
+	/**
+	 * Non nullable columns (if a column got a NULL value = it's supported to not change anything)
+	 *
+	 * @result array List of non nullable columns
+	**/ 
+	public function getTableNotNulls(){
+		return $this->_not_nulls;
+	}
+
+	/**
+	 * Add a not null column
+	 *
+	 * @param string|array $column Column name (array values : list of columns name)
+	**/
+	public function addTableNotNull($column){
+
+		if(is_array($column)){
+
+			foreach($column AS $c)
+				$this->addTableNotNull($c);
+
+		}elseif(is_string($column)){
+
+			$this->_not_nulls[] = $column;
+
+		}else{
+
+			//TODO Exception
+			return false;
+
+		}
+
+		return $this;
+
+	}
+
+	/**
+	 * Add a filtering function for a column on TableRow::setData
+	 *
+	 * @param string $column Column name
+	 * @param \Closure $filter Filtering function
+	**/
+	public function onSetData($column, \Closure $filter){
+		if($filter instanceof \Closure)
+			$this->_filters_datas[$column] = $filter;
+		else
+			//TODO Exception
+			return false;
+
+		return $this;
+	}
+
+	/**
+	 * Filter a data value
+	 *
+	 * @param string $column Column name
+	 * @param mixed $value Column value
+	**/
+	public function filterData($column, $value){
+		if(isset($this->_filters_datas[$column]))
+			$value = $this->_filters_datas[$column]($value);
+
+		return $value;
 	}
 
 	/**
@@ -147,14 +228,20 @@ class Table {
 	}
 
 	/**
-	 * Remove ID datas from an array (used by TableRow before insert and update)
+	 * Remove undesired columns form datas array (used by TableRow::save())
 	 *
 	 * @param &array $datas Array of datas
 	 * @return array
 	**/
-	public function clearDatasId(array &$datas){
-		if(!empty($this->_id)){
+	public function clearDatasColumns(array &$datas, $remove_id = true){
+		//Remove ID if present inside
+		if($remove_id AND !empty($this->_id)){
 			unset($datas[$this->_id]);
+		}
+
+		foreach($this->_not_nulls AS $column){
+			if($datas[$column] === null)
+				unset($datas[$column]);
 		}
 
 		return $datas;
@@ -163,13 +250,11 @@ class Table {
 	/**
 	 * Insert query
 	 *
-	 * @notes Clear ID from datas using ::clearDatasId()
-	 *
 	 * @param array $datas Datas for insert
-	 * @param mixed &$insertId new insert id helper
+	 * @param mixed &$insert_id new insert id helper
 	 * @return Insert|bool Insert or inserting results
 	**/
-	public function insert(array $datas = null, &$insertId = null){
+	public function insert(array $datas = null, &$insert_id = null){
 
 		//No datas ? new Insert
 		if($datas == null)
@@ -180,9 +265,10 @@ class Table {
 
 		if(!empty($this->_id)){
 
-			$insertId = (isset($datas[$this->_id]))
-				? $datas[$this->_id]
-				: $driver->lastInsertId();
+			//$insert_id = (isset($datas[$this->_id]))
+			//	? $datas[$this->_id]
+			//	: $driver->lastInsertId($this);
+			$insert_id = $driver->lastInsertId($this);
 
 		}
 

@@ -687,4 +687,13 @@ class Mysql extends PDO {
 
 	}
 
+	/**
+	 * Return null for MySQL lastInsertId
+	 *
+	 * @return null
+	**/
+	public function getTableSequence(Table $table){
+		return null;
+
+	}
 }
