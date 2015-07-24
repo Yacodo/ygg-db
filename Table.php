@@ -11,6 +11,8 @@ class Table {
 
 	protected $_id;
 
+	protected $_lazy_load = true;
+
 	protected $_mounts = array();
 	protected $_not_nulls = array();
 	protected $_filters_datas = array();
@@ -57,6 +59,13 @@ class Table {
 	**/
 	public function getTableSequence(){
 		return $this->_driver->getTableSequence($this);
+	}
+
+	/**
+	 * Verify if table can be lazy loaded (happen when TableRow::__get($var) fail to find something and only datas in _datasClean is the identifier)
+	**/
+	public function isTableLazyLoad(){
+		return $this->_lazy_load;
 	}
 
 	/**
@@ -240,7 +249,7 @@ class Table {
 		}
 
 		foreach($this->_not_nulls AS $column){
-			if($datas[$column] === null)
+			if(isset($datas[$column]) AND $datas[$column] === null)
 				unset($datas[$column]);
 		}
 

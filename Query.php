@@ -164,7 +164,7 @@ abstract class Query {
 
 				}
 
-				$this->_params[$name] = $value;
+				$this->_params[$name] = $this->getDriver()->convertValue($value);
 
 			}
 

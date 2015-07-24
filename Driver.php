@@ -11,6 +11,7 @@ interface Driver {
 	public function quoteColumn($column, $table = null);
 	public function quoteValue($value);
 	public function alias($name, $alias);
+	public function convertValue($value);
 
 	public function getOperator($operator);
 

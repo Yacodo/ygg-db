@@ -24,6 +24,17 @@ class TableRow extends Row {
 
 	}
 
+	/**
+	 * Return current TableRow table
+	 *
+	 * @return Table
+	**/
+	public function getTable(){
+		
+		return $this->_table;
+
+	}
+
 	private function mountDatas(array $datas){
 
 		$this->_datas = array();
@@ -198,6 +209,11 @@ class TableRow extends Row {
 
 			}else{
 
+				if($this->reloadable()){
+					$this->reload();
+					return $this->__get($name);
+				}
+				
 				return null;
 
 			}
@@ -234,9 +250,22 @@ class TableRow extends Row {
 	}
 
 	/**
+	 * Verify if current row can be saved
+	**/ 
+	public function saveable(array &$datas = null){
+
+		if(!$datas)
+			$datas = $this->_datas;
+		
+		return count($this->_table->clearDatasColumns($datas)) > 0;
+
+
+	}
+	
+	/**
 	 * Save row
-	 * Insert when datasClean is null ($this->clean();)
-	 * Update when datasClean is array ($this->setResult($result)->fetch();)
+	 * Insert when datasClean is null
+	 * Update when datasClean is array
 	 *
 	 * @return Row
 	 **/
@@ -247,13 +276,15 @@ class TableRow extends Row {
 			$this->reloadIDMounted($mounted, $prefix);
 		}
 
+		$datas = $this->_datas;
+
 		//Check if new datas added
-		$hasDatas = count($this->_datas); 
+		$saveable = $this->saveable($datas); 
 
 		//check for Update
 		if(count($this->_datasClean)){ 
 
-			if($hasDatas){
+			if($saveable){
 
 				//By identifier
 				if(($id = $this->_table->getTableIdentifier())){
@@ -268,30 +299,30 @@ class TableRow extends Row {
 
 					}
 
-					if(!isset($conditions)){ //By current row datas (if none assigned)
-						$conditions = $this->_datasClean;
-					}
-
-					return $this->_table->update(
-						$this->_table->clearDatasColumns($this->_datas), 
-						$conditions
-					);
-
 				}
+
+				if(!isset($conditions)){ //By current row datas (if none assigned)
+					$conditions = $this->_datasClean;
+				}
+
+				return $this->_table->update(
+					$datas, 
+					$conditions
+				);
 
 			}
 
-		}elseif($hasDatas){ //check for Insert
+		}elseif($saveable){ //check for Insert
 
 			$id = $this->_table->insert(
-				$this->_table->clearDatasColumns($this->_datas)
+				$datas
 			);
 			
 			$t_id = $this->_table->getTableIdentifier();
 
 			//Assign ID after create
 			if($t_id){
-				unset($this->_datas[$t_id]);	
+				unset($this->_datas[$t_id]);
 				$this->_datasClean[$t_id] = $id;
 			}
 
@@ -300,6 +331,21 @@ class TableRow extends Row {
 		}
 
 		//Nothing for save(), no datas ($_datas) for update or insert
+		return false;
+
+	}
+
+	public function reloadable(){
+		if($this->_table->isTableLazyLoad() AND !empty($this->_table->getTableIdentifier())){
+
+			return (
+				count($this->_datasClean) == 1
+				AND
+				isset($this->_datasClean[$this->_table->getTableIdentifier()])
+			);
+
+		}
+
 		return false;
 
 	}

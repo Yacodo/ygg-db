@@ -136,6 +136,13 @@ class Pgsql extends PDO {
 
 	}
 
+	public function convertValue($value){
+		if(is_bool($value))
+			$value = (int) $value;
+
+		return $value;
+	}
+
 	/**
 	 * Get an operator for Pgsql
 	 *
