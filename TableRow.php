@@ -314,8 +314,9 @@ class TableRow extends Row {
 
 		}elseif($saveable){ //check for Insert
 
-			$id = $this->_table->insert(
-				$datas
+			$this->_table->insert(
+				$datas,
+				$id
 			);
 			
 			$t_id = $this->_table->getTableIdentifier();
