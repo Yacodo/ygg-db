@@ -486,4 +486,26 @@ class TableRow extends Row {
 
 	}
 
+	/**
+	 * Autocall method from Table
+	 * ex: 
+	 * Table::getName($tablerow){ return $tablerow->name; }
+	 * can be called from TableRow instance using $this->getName();
+	**/ 
+	public function __call($name, array $arguments){
+
+		if(method_exists($this->_table, $name)){
+
+			$args = [$this];
+
+			if($arguments)
+				$args[] = [$arguments];
+
+			return call_user_func_array([$this->_table, $name], $args);
+		}else{
+			throw new Exception\ForwardTableMethodError(get_class($this->_table), $name);
+		}
+
+	}
+
 }
