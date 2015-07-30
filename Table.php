@@ -148,10 +148,12 @@ class Table {
 	 *
 	 * @param string $column Column name
 	 * @param mixed $value Column value
+	 * @param boolean $cancel_assign
 	**/
-	public function filterData($column, $value){
-		if(isset($this->_filters_datas[$column]))
-			$value = $this->_filters_datas[$column]($value);
+	public function filterData($column, $value, TableRow $row,  &$cancel_assign = false){
+		if(isset($this->_filters_datas[$column])){
+			$value = $this->_filters_datas[$column]($value, $row, $cancel_assign);
+		}
 
 		return $value;
 	}

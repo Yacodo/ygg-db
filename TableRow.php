@@ -136,9 +136,10 @@ class TableRow extends Row {
 	 * @param mixed $value Data value
 	**/
 	public function setData($name, $value){
-		$value = $this->_table->filterData($name, $value);
-
-		$this->_datas[$name] = $value;
+		$value = $this->_table->filterData($name, $value, $this, $cancel_assign);
+		
+		if(!$cancel_assign)
+			$this->_datas[$name] = $value;
 	}
 
 	/**
