@@ -25,6 +25,8 @@ abstract class Query {
 
 	//Etc...
 	const ALL = '*';
+	const OP_AND = 'AND';
+	const OP_OR = 'OR';
 
 	protected $_refTable;
 	protected $_driver;
@@ -406,7 +408,7 @@ abstract class Query {
 	 * @param mixed $operator Operator
 	 * @param bool Avoid "parameterization" of value
 	**/
-	protected function addWhere($type, $column, $value, $operator, $param = true){
+	/**protected function addWhere($type, $column, $value, $operator, $param = true){
 
 		if($this->_wheres !== null){
 
@@ -475,21 +477,155 @@ abstract class Query {
 
 		}
 
+	}**/
+
+	public function createParam($column, $value){
+
+		if(!($value instanceof Expr)){
+
+			$keyParam = ':param_' . \str_replace('.', '_', $column);
+			$this->addParam($keyParam, $value);
+			$value = new Expr\Param($keyParam);
+
+		}
+
+		return $value;
+
+	}
+
+	protected function addWhere($type, $column, $value, $operator){
+
+		if($this->_wheres !== null){
+
+			$this->_wheres[] = self::formatWhere(
+				$type,
+				$column,
+				$this->createParam($column, $value),
+				$operator
+			);
+
+			/**$param = true;
+
+			if(\is_array($value)){
+
+				if(!\array_key_exists('value', $value) OR !\array_key_exists('operator', $value)){
+
+					throw new Exception\MissingInformations($value, array('operator', 'value'));
+
+				}
+
+				$operator = $value['operator'];
+
+				$value = $value['value'];
+
+			}
+			
+			if(
+				$operator === false
+				OR
+				!in_array(
+					$operator,
+					array(
+						self::EQUAL,
+						self::NOTEQUAL,
+						self::LT,
+						self::GT,
+						self::LTE,
+						self::GTE,
+						self::LIKE,
+						self::REGEXP
+					)
+				)
+			){
+
+				if($operator === false){
+
+					$param = false;
+
+				}
+
+				$operator = self::EQUAL;
+
+			}
+
+			if($param AND $value != null){
+
+				if(!($value instanceof Expr)){
+
+					$keyParam = ':where_' . \str_replace('.', '_', $column);
+					$this->addParam($keyParam, $value);
+					$value = new Expr\Param($keyParam);
+
+				}
+
+			}
+
+			$this->_wheres[] = array(
+				'type' => $type,
+				'column' => $column,
+				'value' => $value,
+				'operator' => $operator
+			);**/
+
+		}
+
+	}
+
+	public static function formatWhere($type, $column, $value, $operator){
+
+		if(\is_array($value)){
+
+			if(!\array_key_exists('value', $value) OR !\array_key_exists('operator', $value)){
+
+				throw new Exception\MissingInformations($value, array('operator', 'value'));
+
+			}
+
+			$operator = $value['operator'];
+
+			$value = $value['value'];
+
+		}
+		
+		if(
+			!in_array(
+				$operator,
+				array(
+					self::EQUAL,
+					self::NOTEQUAL,
+					self::LT,
+					self::GT,
+					self::LTE,
+					self::GTE,
+					self::LIKE,
+					self::REGEXP
+				)
+			)
+		){
+
+			$operator = self::EQUAL;
+
+		}
+
+		return array(
+			'type' => $type,
+			'column' => $column,
+			'value' => $value,
+			'operator' => $operator
+		);
+
 	}
 
 	/**
 	 * Add a Query condition (Type = AND)
 	 * where('column', 'value', '=') // operator is optional
 	 * where('column', array('value' => 'value', 'operator' => '=')) // Same as first
-	 * where('column', 'value', false) // if operator === false, value isn't considered like a param and operator == '='
-	 * where('column', 'value', '!=', false) // Same but operator == '!='
-	 * Avoid the two last call example if possible
 	 *
 	 * @see addWhere()
 	**/
-	public function where($column, $value, $operator = self::EQUAL, $param = true){
+	public function where($column, $value, $operator = self::EQUAL){
 
-		$this->addWhere('AND', $column, $value, $operator, $param);
+		$this->addWhere('AND', $column, $value, $operator);
 		return $this;
 	
 	}
@@ -499,9 +635,9 @@ abstract class Query {
 	 *
 	 * @see where() 
 	**/
-	public function orWhere($column, $value, $operator = self::EQUAL, $param = true){
+	public function orWhere($column, $value, $operator = self::EQUAL){
 
-		$this->addWhere('OR', $column, $value, $operator, $param);
+		$this->addWhere('OR', $column, $value, $operator);
 		return $this;
 
 	}
