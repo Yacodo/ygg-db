@@ -128,6 +128,15 @@ class Mysql extends PDO {
 	}
 
 	/**
+	 * TODO
+	**/ 
+	public function quoteList($list){
+	
+		return '(' . $list . ')';		
+
+	}
+
+	/**
 	 * Alias for MySQL
 	 *
 	 * @param string $name Data to alias

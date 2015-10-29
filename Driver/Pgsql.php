@@ -122,6 +122,15 @@ class Pgsql extends PDO {
 	}
 
 	/**
+ 	 * TODO
+	**/ 
+	public function quoteList($list){
+	
+		return '(' . $list . ')';		
+
+	}
+
+	/**
 	 * Alias for Pgsql
 	 *
 	 * @param string $name Data to alias
@@ -332,7 +341,7 @@ class Pgsql extends PDO {
 
             }
 
-            $result = '(' . $result . ')';
+            $result = $this->quoteList( $result);
 
         }
 
@@ -372,7 +381,7 @@ class Pgsql extends PDO {
 			
 			}
 
-			$result = '(' . $result . ')';
+			$result = $this->quoteList($result);
 
 		}
 
