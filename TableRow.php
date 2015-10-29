@@ -10,15 +10,17 @@ class TableRow extends Row {
 	protected $_datas;
 
 	protected $_mounted;
+	protected $_mounted_by;
 
 	/**
 	 * Constructor
 	 *
 	 * @param Table $table Table for Row
 	 **/
-	public function __construct(Table $table, array $datas = array()){
+	public function __construct(Table $table, array $datas = array(), TableRow $mounted_by = null){
 
 		$this->_table = $table;
+		$this->_mounted_by = $mounted_by;
 
 		$this->mountDatas($datas);
 
@@ -118,7 +120,7 @@ class TableRow extends Row {
 
 			//Checking if mounted prefix exists
 			if(!isset($this->_mounted[$prefix])){
-				$this->_mounted[$prefix] = $this->_table->getTableMounts()[$prefix]->createRow();
+				$this->_mounted[$prefix] = $this->_table->getTableMounts()[$prefix]->createRow(array(), $this);
 			}
 
 			return $this->_mounted[$prefix];
@@ -129,6 +131,13 @@ class TableRow extends Row {
 
 	}
 
+	public function isMounted(){
+		return ($this->_mounted_by != null);
+	}
+
+	public function getMountedBy(){
+		return $this->_mounted_by;
+	}
 	/**
 	 * Add data
 	 *
@@ -165,8 +174,6 @@ class TableRow extends Row {
 			$mounted = $this->getMountedPrefix($prefix);
 
 			if($mounted){
-				$t_id = $mounted->_table->getTableIdentifier();
-
 				if(\is_array($value)){
 					$mounted->fromArray($value);
 					

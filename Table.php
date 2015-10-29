@@ -232,9 +232,9 @@ class Table {
 	 *
 	 * @param array|mixed $datas Row datas
 	**/
-	public function createRow($datas = array()){
+	public function createRow($datas = array(), TableRow $mounted_by = null){
 
-		return new TableRow($this, $datas);	
+		return new TableRow($this, $datas, $mounted_by);	
 
 	}
 

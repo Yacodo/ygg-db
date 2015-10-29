@@ -10,6 +10,7 @@ interface Driver {
 
 	public function quoteColumn($column, $table = null);
 	public function quoteValue($value);
+	public function quoteList($list);
 	public function alias($name, $alias);
 	public function convertValue($value);
 
