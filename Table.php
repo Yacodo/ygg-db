@@ -150,7 +150,7 @@ class Table {
 	 * @param mixed $value Column value
 	 * @param boolean $cancel_assign
 	**/
-	public function filterData($column, $value, TableRow $row,  &$cancel_assign = false){
+	public function filterData($column, $value, TableRow $row, &$cancel_assign = false){
 		if(isset($this->_filters_datas[$column])){
 			$value = $this->_filters_datas[$column]($value, $row, $cancel_assign);
 		}

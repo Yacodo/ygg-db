@@ -404,8 +404,10 @@ class TableRow extends Row {
 	 * Reload mounted
 	**/
 	public function reloadMounted(){
-		foreach($this->_mounted AS $mounted)
+		foreach($this->_mounted AS $mounted){
 			$mounted->reload(true);
+			$mounted->_mounted_by = $this;
+		}
 
 		return $this;
 	}
