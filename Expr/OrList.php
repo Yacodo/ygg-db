@@ -5,7 +5,7 @@ use ygg\Db\Expr;
 use ygg\Db\Query;
 use ygg\Db\Driver;
 
-class OrList implements WhereList {
+class OrList extends WhereList {
 
 	public function __construct(){
 	
